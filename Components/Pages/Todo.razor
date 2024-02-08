@@ -1,0 +1,75 @@
+﻿@page "/"
+@using ToDoList.Models
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedLocalStorage BrowserStorage
+
+<PageTitle>ToDo</PageTitle>
+
+<div class="d-flex justify-content-center mt-5">
+    <div class="card m-2 cb1 text-center">
+        <div class="card-body">
+
+            <span class="number">@todos.Count(todo => !todo.IsDone)</span>
+            <h1 class="text-md-center py-md-4 text-muted">ToDo</h1>
+            <div class="d-flex flex-row justify-content-md-center mb-md-3">
+                <InputText class="me-md-3 ps-md-2 text-box text-white" placeholder="Something todo" @bind-Value="newTodo" />
+                <button class="btn btn-outline-light me-md-1" @onclick="AddTodo">Add</button>
+            </div>
+
+            <div>
+                <ul class="list-unstyled">
+                    @foreach (var todo in todos)
+                    {
+                        <li class="p-md-2 row">
+                            <InputCheckbox class="col-md-2 m-md-1" @bind-Value="todo.IsDone"  />
+                            <InputText class="text-box text-white ps-md-2 pe-md-4 pt-md-1 pb-md-1 col-md-9" @bind-Value="todo.Title" />
+                        </li>
+                    }
+                </ul>
+            </div>
+            <button class="btn btn-outline-light ms-md-1" @onclick="Delete">Clear</button>
+        </div>
+    </div>
+</div>
+<h4 class="mb-4 d-flex flex-md-fill justify-content-center text-muted footer">Flectere si nequeo superos Acheronta movebo.</h4>
+
+
+@code {
+    private string? newTodo;
+    private List<ToDoItem> todos = new();
+
+    protected override async void OnInitialized()
+    {
+        await Read();
+        StateHasChanged();
+    }
+
+    private async Task AddTodo()
+    {
+        if (!string.IsNullOrWhiteSpace(newTodo))
+        {
+            todos.Add(new ToDoItem { Title = newTodo });
+            newTodo = string.Empty;
+        }
+        StateHasChanged();
+        await Save();
+    }
+
+    public async Task Save()
+    {
+        await BrowserStorage.SetAsync("ToDo", todos);
+    }
+
+    public async Task Read()
+    {
+        var result = await BrowserStorage.GetAsync<List<ToDoItem>>("ToDo");
+        todos = result.Success ? result.Value! : new List<ToDoItem>();
+    }
+
+    public async Task Delete()
+    {
+        await BrowserStorage.DeleteAsync("ToDo");
+        todos = new List<ToDoItem>();
+    }
+}
